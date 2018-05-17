@@ -1,0 +1,10 @@
+controller_list:
+  - name: fake_Arm_Group_controller
+    joints:
+      - base_to_link1
+      - armLink1_to_armLink2
+      - armLink2_to_armLink3
+      - armLink3_to_armLink4
+      - armLink4_to_armLink5
+      - armLink5_to_armLink6
+      - armLink6_to_armLink7
