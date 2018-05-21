@@ -89,6 +89,10 @@ int main(int argc, char** argv) {
   // ^^^^^^^^^^^^^
   // The package MoveItVisualTools provides many capabilties for visualizing objects, robots,
   // and trajectories in RViz as well as debugging tools such as step-by-step introspection of a script
+  
+
+  //Ensure that the marker array panel (subscribed to /rviz_visual_tools) is active
+
   namespace rvt = rviz_visual_tools;
   moveit_visual_tools::MoveItVisualTools visual_tools("platform_base");
 
@@ -122,5 +126,66 @@ int main(int argc, char** argv) {
   /* We can also use visual_tools to wait for user input */
   visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to start the demo");
 
-  //TODO: incorporate rest of tutorial 
+    // Pose Goal
+  // ^^^^^^^^^
+  // We will now create a motion plan request for the arm of the Panda
+  // specifying the desired pose of the end-effector as input.
+  ROS_INFO("About to move into the Planning section");
+  planning_interface::MotionPlanRequest req;
+  planning_interface::MotionPlanResponse res;
+  geometry_msgs::PoseStamped pose;
+
+  //PoseStamped apparently uses quaternion to avoid singularities (orientation)
+  pose.header.frame_id = "platform_base";
+  pose.pose.position.x = 1.3306;
+  pose.pose.position.y = 2;
+  pose.pose.position.z = 3.64;
+  pose.pose.orientation.w = 1.0;
+
+    // A tolerance of 0.01 m is specified in position
+  // and 0.01 radians in orientation
+  std::vector<double> tolerance_pose(3, 0.01);
+  std::vector<double> tolerance_angle(3, 0.01);
+
+    // We will create the request as a constraint using a helper function available
+  // from the
+  // `kinematic_constraints`_
+  // package.
+  //
+  // .. _kinematic_constraints:
+  //     http://docs.ros.org/indigo/api/moveit_core/html/namespacekinematic__constraints.html#a88becba14be9ced36fefc7980271e132
+  req.group_name = "Arm_Group";
+  moveit_msgs::Constraints pose_goal =
+      kinematic_constraints::constructGoalConstraints("armLink7square", pose, tolerance_pose, tolerance_angle);
+  req.goal_constraints.push_back(pose_goal);
+
+  // We now construct a planning context that encapsulate the scene,
+  // the request and the response. We call the planner using this
+  // planning context
+  planning_interface::PlanningContextPtr context =
+      planner_instance->getPlanningContext(planning_scene, req, res.error_code_);
+  context->solve(res);
+  if (res.error_code_.val != res.error_code_.SUCCESS)
+  {
+    ROS_ERROR("Could not compute plan successfully");
+    return 0;
+  }
+
+    // Visualize the result
+  // ^^^^^^^^^^^^^^^^^^^^
+  ros::Publisher display_publisher =
+      node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+  moveit_msgs::DisplayTrajectory display_trajectory;
+
+  /* Visualize the trajectory */
+  ROS_INFO("Visualizing the trajectory");
+  moveit_msgs::MotionPlanResponse response;
+  res.getMessage(response);
+
+  display_trajectory.trajectory_start = response.trajectory_start;
+  display_trajectory.trajectory.push_back(response.trajectory);
+  display_publisher.publish(display_trajectory);
+
+  /* We can also use visual_tools to wait for user input */
+  visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
 }
