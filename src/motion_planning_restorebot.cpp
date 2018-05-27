@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
   // .. _kinematic_constraints:
   //     http://docs.ros.org/indigo/api/moveit_core/html/namespacekinematic__constraints.html#a88becba14be9ced36fefc7980271e132
   req.group_name = "Arm_Group";
-  req.allowed_planning_time = 2;
+  req.allowed_planning_time = 3;
   moveit_msgs::Constraints pose_goal =
       kinematic_constraints::constructGoalConstraints("armLink7square", pose, tolerance_pose, tolerance_angle);
   req.goal_constraints.push_back(pose_goal);

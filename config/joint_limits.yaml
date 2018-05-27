@@ -3,37 +3,37 @@
 # Joint limits can be turned off with [has_velocity_limits, has_acceleration_limits]
 joint_limits:
   armLink1_to_armLink2:
-    has_velocity_limits: false
-    max_velocity: 0
+    has_velocity_limits: true
+    max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
   armLink2_to_armLink3:
-    has_velocity_limits: false
-    max_velocity: 0
+    has_velocity_limits: true
+    max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
   armLink3_to_armLink4:
-    has_velocity_limits: false
-    max_velocity: 0
+    has_velocity_limits: true
+    max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
   armLink4_to_armLink5:
-    has_velocity_limits: false
-    max_velocity: 0
+    has_velocity_limits: true
+    max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
   armLink5_to_armLink6:
-    has_velocity_limits: false
-    max_velocity: 0
+    has_velocity_limits: true
+    max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
   armLink6_to_armLink7:
-    has_velocity_limits: false
-    max_velocity: 0
+    has_velocity_limits: true
+    max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
   base_to_link1:
-    has_velocity_limits: false
-    max_velocity: 0
+    has_velocity_limits: true
+    max_velocity: 1
     has_acceleration_limits: false
     max_acceleration: 0
