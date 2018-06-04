@@ -94,9 +94,7 @@ int main(int argc, char** argv) {
   }
 
   //INSERT CODE HERE TO ADD Default Collision Detector
-    //collision_detection::CollisionDetectorHybridPluginLoader::initialize(planning_scene,false	);
   planning_scene->setActiveCollisionDetector(collision_detection::CollisionDetectorAllocatorHybrid::create(), true);
-  //pray this works- setting planning time to 2 seconds see if FMTk works properly
 
   // Visualization
   // ^^^^^^^^^^^^^
@@ -108,15 +106,6 @@ int main(int argc, char** argv) {
 
   namespace rvt = rviz_visual_tools;
   moveit_visual_tools::MoveItVisualTools visual_tools("platform_base");
-
-
-  /*
-	original line: 
-	  moveit_visual_tools::MoveItVisualTools visual_tools("panda_link0");
-	There doesn't seem to be a panda_link0 joint that's moveable, so I'm going to assume that
-	it's the base joint.
-  */
-
 
   visual_tools.deleteAllMarkers();
 
@@ -139,55 +128,14 @@ int main(int argc, char** argv) {
   /* We can also use visual_tools to wait for user input */
   visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to start the demo");
 
-    // Pose Goal
-  // ^^^^^^^^^
-  // We will now create a motion plan request for the arm of the Panda
-  // specifying the desired pose of the end-effector as input.
+
+  // JOINT SPACE GOAL
+  // ^^^^^^^^^^^^^^^^^
+
   ROS_INFO("About to move into the Planning section");
   planning_interface::MotionPlanRequest req;
   planning_interface::MotionPlanResponse res;
   geometry_msgs::PoseStamped pose;
-
-  // //PoseStamped apparently uses quaternion to avoid singularities (orientation)
-  // //Following lines are commented to see if joint space goal works
-  // pose.header.frame_id = "platform_base";
-  // pose.pose.position.x = 1.3306;
-  // pose.pose.position.y = 2;
-  // pose.pose.position.z = 3.64;
-  // pose.pose.orientation.w = 1.0;
-
-  //   // A tolerance of 0.01 m is specified in position
-  // // and 0.01 radians in orientation
-  // std::vector<double> tolerance_pose(3, 0.01);
-  // std::vector<double> tolerance_angle(3, 0.01);
-
-  //   // We will create the request as a constraint using a helper function available
-  // // from the
-  // // `kinematic_constraints`_
-  // // package.
-  // //
-  // // .. _kinematic_constraints:
-  // //     http://docs.ros.org/indigo/api/moveit_core/html/namespacekinematic__constraints.html#a88becba14be9ced36fefc7980271e132
-  // req.group_name = "Arm_Group";
-  // req.allowed_planning_time = 2;
-  // moveit_msgs::Constraints pose_goal =
-  //     kinematic_constraints::constructGoalConstraints("armLink7square", pose, tolerance_pose, tolerance_angle);
-  // req.goal_constraints.push_back(pose_goal);
-
-  // // We now construct a planning context that encapsulate the scene,
-  // // the request and the response. We call the planner using this
-  // // planning context
-  // planning_interface::PlanningContextPtr context =
-  //     planner_instance->getPlanningContext(planning_scene, req, res.error_code_);
-  // context->solve(res);
-  // if (res.error_code_.val != res.error_code_.SUCCESS)
-  // {
-  //   ROS_ERROR("Could not compute plan successfully");
-  //   return 0;
-  // }
-
-  // JOINT SPACE GOAL
-  // ^^^^^^^^^^^^^^^^^
 
   geometry_msgs::Pose start_pose2_tar;
   start_pose2_tar.orientation.w = 1.0;
@@ -202,9 +150,6 @@ int main(int argc, char** argv) {
   planning_scene->setCurrentState(start_state); //maybe this
   robot_state->setJointGroupPositions(joint_model_group, start_joint_vals);  //maybe
   moveit::core::robotStateToRobotStateMsg(start_state,req.start_state);
-
-
-
 
   req.group_name = "Arm_Group";
   req.allowed_planning_time = 2;
@@ -225,8 +170,6 @@ int main(int argc, char** argv) {
 	  ROS_ERROR("Could not compute plan successfully");
 	  return 0;
 	}
-
-
 
     // Visualize the result
   // ^^^^^^^^^^^^^^^^^^^^

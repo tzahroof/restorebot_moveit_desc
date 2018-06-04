@@ -65,3 +65,7 @@ install(TARGETS motion_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DEST
 add_executable(chomp_planning_restorebot src/chomp_planning_restorebot.cpp)
 target_link_libraries(chomp_planning_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS chomp_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+add_executable(hybrid_planning_restorebot src/hybrid_planning_restorebot.cpp)
+target_link_libraries(hybrid_planning_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS hybrid_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
