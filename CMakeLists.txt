@@ -25,6 +25,7 @@ endif()
 find_package(catkin REQUIRED
   COMPONENTS
     moveit_core
+    moveit_experimental
     moveit_visual_tools
     moveit_ros_planning
     moveit_ros_planning_interface
@@ -44,6 +45,7 @@ catkin_package(
     ${THIS_PACKAGE_INCLUDE_DIRS}
   CATKIN_DEPENDS
     moveit_core
+    moveit_experimental
     moveit_visual_tools
     moveit_ros_planning_interface
     interactive_markers
@@ -59,3 +61,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 add_executable(motion_planning_restorebot src/motion_planning_restorebot.cpp)
 target_link_libraries(motion_planning_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS motion_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+add_executable(chomp_planning_restorebot src/chomp_planning_restorebot.cpp)
+target_link_libraries(chomp_planning_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS chomp_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
