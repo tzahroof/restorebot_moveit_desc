@@ -36,6 +36,7 @@
   <build_depend>eigen</build_depend>
   <build_depend>moveit_core</build_depend>
   <build_depend>moveit_experimental</build_depend>
+  <build_depend>stomp_core</build_depend>
   <build_depend>moveit_ros_planning_interface</build_depend>
   <build_depend>moveit_ros_perception</build_depend>
   <build_depend>interactive_markers</build_depend>
@@ -45,6 +46,7 @@
   <run_depend>pluginlib</run_depend>
   <run_depend>moveit_core</run_depend>
   <run_depend>moveit_experimental</run_depend>
+  <run_depend>stomp_core</run_depend>
   <run_depend>moveit_ros_planning_interface</run_depend>
   <run_depend>moveit_ros_perception</run_depend>
   <run_depend>interactive_markers</run_depend>

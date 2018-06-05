@@ -28,8 +28,8 @@
     <!-- End of Things I'm not sure -->
 
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/kinematics.yaml"/>
-    <param name="planning_plugin" value="chomp_interface/CHOMPPlanner"/>
-    <rosparam command="load" file="$(find restorebot_moveit_desc)/config/chomp_planning.yaml"/>
+    <param name="planning_plugin" value="stomp_moveit/StompPlannerManager"/>
+    <rosparam command="load" file="$(find restorebot_moveit_desc)/config/stomp_planning.yaml"/>
 
 
   </node>

@@ -25,6 +25,7 @@ endif()
 find_package(catkin REQUIRED
   COMPONENTS
     moveit_core
+    stomp_core
     moveit_experimental
     moveit_visual_tools
     moveit_ros_planning
@@ -45,6 +46,7 @@ catkin_package(
     ${THIS_PACKAGE_INCLUDE_DIRS}
   CATKIN_DEPENDS
     moveit_core
+    stomp_core
     moveit_experimental
     moveit_visual_tools
     moveit_ros_planning_interface

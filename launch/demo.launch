@@ -39,10 +39,10 @@
   <!-- Run the main MoveIt executable without trajectory execution (we do not have controllers configured by default) -->
   <include file="$(find restorebot_moveit_desc)/launch/move_group.launch">
     <arg name="allow_trajectory_execution" value="true"/>
-    <arg name="fake_execution" value="true"/>
+    <arg name="fake_execution" value="false"/>
     <arg name="info" value="true"/>
     <arg name="debug" value="$(arg debug)"/>
-    <arg name="planner" value="ompl" />
+    <arg name="planner" value="stomp" />
   </include>
 
   <!-- Run Rviz and load the default config to see the state of the move_group node -->

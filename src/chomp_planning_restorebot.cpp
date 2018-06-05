@@ -154,7 +154,8 @@ int main(int argc, char** argv) {
   req.group_name = "Arm_Group";
   req.allowed_planning_time = 2;
   robot_state::RobotState goal_state(robot_model);
-  std::vector<double> joint_values = { 0.0, 0.6, 0.5, 0.0, 0.0, 0.0, 0.0 };
+  //std::vector<double> joint_values = {3.14 , 0.83 , -0.19 , -1.63 , 0.0 , 0.0 , 0.0 };
+  std::vector<double> joint_values = {3.14 , 0.83 , 0.0 , 0.0 , 0.0 , 0.0 , 0.0 };
   goal_state.setJointGroupPositions(joint_model_group, joint_values);
   moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
   req.goal_constraints.clear();

@@ -24,10 +24,10 @@
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
 
     <param name="sbp_plugin"      value="ompl_interface/OMPLPlanner"/>
-    <param name="chomp_plugin"    value="chomp_interface/CHOMPPlanner"/>
+    <param name="chomp_plugin"    value="stomp_moveit/StompPlannerManager"/>
 
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/ompl_planning.yaml"/>
-    <rosparam command="load" file="$(find restorebot_moveit_desc)/config/chomp_planning.yaml"/>
+    <rosparam command="load" file="$(find restorebot_moveit_desc)/config/stomp_planning.yaml"/>
   </node>
 
 </launch>
