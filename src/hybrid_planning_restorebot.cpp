@@ -264,9 +264,10 @@ int main(int argc, char** argv) {
   req.goal_constraints.push_back(joint_goal);
 
 
+
   //Now, provide an initial seed trajectory
 
-  //moveit_msgs::TrajectoryConstraints res;
+  // moveit_msgs::TrajectoryConstraints res;
   // == req.trajectory_constraints
   trajectory_msgs::JointTrajectory seed = response.trajectory.joint_trajectory;
   const auto dof = seed.joint_names.size();
@@ -289,12 +290,12 @@ int main(int argc, char** argv) {
     req.trajectory_constraints.constraints.push_back(std::move(c));
   }
 
-//  robot_state::RobotState goal_state(robot_model);
-//  std::vector<double> joint_values = {0.0 , 0.6 , 0.5 , 0.6 , 0.0 , 0.0 , 0.0 };
-//  goal_state.setJointGroupPositions(joint_model_group, joint_values);
-//  moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
-//  req.goal_constraints.clear();
-//  req.goal_constraints.push_back(joint_goal);
+ // robot_state::RobotState goal_state(robot_model);
+ // std::vector<double> joint_values = {0.0 , 0.6 , 0.5 , 0.6 , 0.0 , 0.0 , 0.0 };
+ // goal_state.setJointGroupPositions(joint_model_group, joint_values);
+ // moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
+ // req.goal_constraints.clear();
+ // req.goal_constraints.push_back(joint_goal);
 
   // Call the planner and visualize the trajectory
   /* Re-construct the planning context */
@@ -308,13 +309,27 @@ int main(int argc, char** argv) {
     return 0;
   }
   /* Visualize the trajectory */
+
+  //Following code to separate STOMP from FMT*
+  ros::Publisher display_publisher_stomp =
+      node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path_stomp", 1, true);
+  moveit_msgs::DisplayTrajectory display_trajectory_stomp;
+
+  /* Visualize the trajectory */
   ROS_INFO("Visualizing the trajectory");
   res.getMessage(response);
-  display_trajectory.trajectory_start = response.trajectory_start;
-  display_trajectory.trajectory.push_back(response.trajectory);
+  display_trajectory_stomp.trajectory_start = response.trajectory_start;
+  display_trajectory_stomp.trajectory.push_back(response.trajectory);
 
-  /* Now you should see two planned trajectories in series*/
-  display_publisher.publish(display_trajectory);
+  display_publisher_stomp.publish(display_trajectory);
+
+  // ROS_INFO("Visualizing the trajectory");
+  // res.getMessage(response);
+  // display_trajectory.trajectory_start = response.trajectory_start;
+  // display_trajectory.trajectory.push_back(response.trajectory);
+
+  // /* Now you should see two planned trajectories in series*/
+  // display_publisher.publish(display_trajectory);
 
   /* Wait for user input */
   visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
