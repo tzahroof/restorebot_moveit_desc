@@ -2,6 +2,11 @@
 /*
 Motion_plannning_api_tutorial.cpp headers
 */
+
+#include <chrono>
+#include <complex>
+#include <math.h> 
+
 #include <pluginlib/class_loader.h>
 #include <ros/ros.h>
 
@@ -19,6 +24,8 @@ Motion_plannning_api_tutorial.cpp headers
 #include <moveit/collision_distance_field/collision_detector_hybrid_plugin_loader.h>
 #include <moveit/collision_distance_field/collision_detector_allocator_hybrid.h>
 #include <moveit/robot_state/conversions.h>
+
+
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "motion_planning_restorebot");
@@ -57,6 +64,9 @@ int main(int argc, char** argv) {
   boost::scoped_ptr<pluginlib::ClassLoader<planning_interface::PlannerManager>> planner_plugin_loader;
   planning_interface::PlannerManagerPtr planner_instance;
   std::string planner_plugin_name; //"/ompl_interface/OMPLPlanner";
+
+  //Set up a publisher to advertise the JointTrajectories to the graphing tool
+  ros::Publisher rqt_publisher = node_handle.advertise<trajectory_msgs::JointTrajectory>("/rqt_publisher/", 1);
 
   // We will get the name of planning plugin we want to loadix
   // from the ROS parameter server, and then load the planner
@@ -184,6 +194,9 @@ int main(int argc, char** argv) {
       node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
   moveit_msgs::DisplayTrajectory display_trajectory;
 
+
+
+
   /* Visualize the trajectory */
   ROS_INFO("Visualizing the trajectory");
   moveit_msgs::MotionPlanResponse response;
@@ -193,7 +206,48 @@ int main(int argc, char** argv) {
   display_trajectory.trajectory.push_back(response.trajectory);
   display_publisher.publish(display_trajectory);
 
-  ROS_INFO_STREAM("If we see this, the file is actuallly building");
+  //Publish JointTrajectory message
+  std::vector<int>::size_type size1 = response.trajectory.joint_trajectory.points.size();
+
+  for(unsigned iter = 0; iter < size1; iter++) {
+  	response.trajectory.joint_trajectory.points[iter].time_from_start = ros::Duration(0.1*iter);
+	//ROS_INFO_STREAM(iter);
+  }
+  rqt_publisher.publish(response.trajectory.joint_trajectory);
+
+
+ //  double cost = 0;
+ //  for(unsigned iter = 0; iter < size1-1; iter++) {
+ //      std::vector<int>::size_type numJointsTariq= response.trajectory.joint_trajectory.points[iter].positions.size();
+ //      double costOfCurrentMovement = 0;
+ //     	for(unsigned j = 0; j < numJointsTariq; j++) {
+	//     costOfCurrentMovement += 
+	// 	pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
+	// }
+ //      cost += sqrt(costOfCurrentMovement);
+ //  }
+
+
+  //COST CALCULATION
+  //TODO: Cost is currently the sum of the distances each joint travels
+  double cost = 0;
+  std::vector<int>::size_type numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
+
+  for(unsigned j = 0; j < numJointsTariq; j++) {
+    double costOfCurrentMovement = 0;
+    for(unsigned iter = 0; iter < size1-1; iter++) {
+          costOfCurrentMovement += 
+            pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
+    }
+    cost += sqrt(costOfCurrentMovement);
+  }
+
+  //Displays the norm
+  ROS_INFO_STREAM(cost);
+
+  
+
+  ROS_INFO_STREAM("If we see this, the file is correctly building");
   /* We can also use visual_tools to wait for user input */
   visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
 
@@ -235,7 +289,7 @@ int main(int argc, char** argv) {
 
   //INSERT CODE HERE TO ADD Default Collision Detector
 //TODO: add back if you want to use CHOMP
-//  planning_scene->setActiveCollisionDetector(collision_detection::CollisionDetectorAllocatorHybrid::create(), true);
+//planning_scene->setActiveCollisionDetector(collision_detection::CollisionDetectorAllocatorHybrid::create(), true);
 
   // Joint Space Goals
   // ^^^^^^^^^^^^^^^^^
@@ -299,6 +353,22 @@ int main(int argc, char** argv) {
 
   // Call the planner and visualize the trajectory
   /* Re-construct the planning context */
+
+
+
+  //ask EE to stay level
+  // geometry_msgs::QuaternionStamped quaternion;
+  // quaternion.header.frame_id = "platform_base";
+  // quaternion.quaternion.w = 1.0;
+  // req.path_constraints = kinematic_constraints::constructGoalConstraints("armLink7square", quaternion);
+
+  // req.workspace_parameters.min_corner.x = req.workspace_parameters.min_corner.y =
+  //   req.workspace_parameters.min_corner.z = -11 .0;
+  // req.workspace_parameters.max_corner.x = req.workspace_parameters.max_corner.y =
+  //   req.workspace_parameters.max_corner.z = 11.0;
+
+
+
   context = planner_instance->getPlanningContext(planning_scene, req, res.error_code_);
   /* Call the Planner */
   context->solve(res);
@@ -321,7 +391,47 @@ int main(int argc, char** argv) {
   display_trajectory_stomp.trajectory_start = response.trajectory_start;
   display_trajectory_stomp.trajectory.push_back(response.trajectory);
 
-  display_publisher_stomp.publish(display_trajectory);
+  display_publisher_stomp.publish(display_trajectory_stomp);
+
+  //Publish JointTrajectory message
+  std::vector<int>::size_type size2 = response.trajectory.joint_trajectory.points.size();
+
+  for(unsigned iter = 0; iter < size2; iter++) {
+  	response.trajectory.joint_trajectory.points[iter].time_from_start = ros::Duration(0.1*iter);
+	//ROS_INFO_STREAM(iter);
+  }
+  rqt_publisher.publish(response.trajectory.joint_trajectory);
+
+  //CALCULATE COST
+  //TODO: Cost is currently the sum of the distances each joint travels
+
+  cost = 0;
+  numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
+
+  for(unsigned j = 0; j < numJointsTariq; j++) {
+    double costOfCurrentMovement = 0;
+    for(unsigned iter = 0; iter < size2-1; iter++) {
+          costOfCurrentMovement += 
+            pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
+    }
+    cost += sqrt(costOfCurrentMovement);
+  }
+
+  ROS_INFO_STREAM("STOMP Cost (by Tariq) :: ");
+  ROS_INFO_STREAM(cost);
+
+ //  cost = 0;
+ //  for(unsigned iter = 0; iter < size2-1; iter++) {
+ //      std::vector<int>::size_type numJoints= response.trajectory.joint_trajectory.points[iter].positions.size();
+ //      double costOfCurrentMovement = 0;
+ //     	for(unsigned j = 0; j < numJoints; j++) {
+	//     costOfCurrentMovement += 
+	// 	pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
+	// }
+ //      cost += sqrt(costOfCurrentMovement);
+ //  }
+ //  ROS_INFO_STREAM("STOMP Cost (by Tariq) :: ");
+ //  ROS_INFO_STREAM(cost);
 
   // ROS_INFO("Visualizing the trajectory");
   // res.getMessage(response);

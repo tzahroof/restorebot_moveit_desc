@@ -71,3 +71,7 @@ install(TARGETS chomp_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTI
 add_executable(hybrid_planning_restorebot src/hybrid_planning_restorebot.cpp)
 target_link_libraries(hybrid_planning_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS hybrid_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+add_executable(stomp_comparison src/stomp_comparison.cpp)
+target_link_libraries(stomp_comparison ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS stomp_comparison DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
