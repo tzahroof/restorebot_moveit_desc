@@ -1,0 +1,7 @@
+<launch>
+
+  <!-- This file makes it easy to include different planning pipelines; 
+       It is assumed that all planning pipelines are named XXX_planning_pipeline.launch  --> 
+  <include file="$(find restorebot_moveit_desc)/launch/ompl_planning_pipeline.launch.xml" />
+
+</launch>

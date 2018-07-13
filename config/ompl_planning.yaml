@@ -54,6 +54,7 @@ planner_configs:
     type: geometric::PRMstar
   FMTkConfigDefault:
     type: geometric::FMT
+    optimization_objective: PathLengthOptimizationObjective
     num_samples: 1000  # number of states that the planner should sample. default: 1000
     radius_multiplier: 1.1  # multiplier used for the nearest neighbors search radius. default: 1.1
     nearest_k: 1  # use Knearest strategy. default: 1

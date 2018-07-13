@@ -19,21 +19,13 @@
   <include file="$(find restorebot_moveit_desc)/launch/moveit_rviz.launch">
   </include>
 
-  <param name = "collision_detector" value = "Hybrid" />
-
-<node name="hybrid_planning_restorebot" pkg="restorebot_moveit_desc" type="hybrid_planning_restorebot" respawn="false" launch-prefix="$(arg launch_prefix)" output="screen">
+<node name="fmt_shortcut_restorebot" pkg="restorebot_moveit_desc" type="fmt_shortcut_restorebot" respawn="false" launch-prefix="$(arg launch_prefix)" output="screen">
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/kinematics.yaml"/>
     <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
 
     <param name="sbp_plugin"      value="ompl_interface/OMPLPlanner"/>
-    <param name="chomp_plugin"    value="stomp_moveit/StompPlannerManager"/>
 
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/ompl_planning.yaml"/>
-    <rosparam command="load" file="$(find restorebot_moveit_desc)/config/stomp_planning.yaml"/>
   </node>
 
 </launch>
-
-<!--
-$(arg launch_prefix)
--->

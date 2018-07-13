@@ -1,0 +1,8 @@
+<launch>
+	
+  <node name="executor_planning_restorebot" pkg="restorebot_moveit_desc" type="executor_planning_restorebot" respawn="false" output="screen">
+  </node>
+
+</launch>
+
+
