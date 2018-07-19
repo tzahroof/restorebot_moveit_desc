@@ -61,6 +61,7 @@ planner_configs:
     cache_cc: 1  # use collision checking cache. default: 1
     heuristics: 0  # activate cost to go heuristics. default: 0
     extended_fmt: 1  # activate the extended FMT*: adding new samples if planner does not finish successfully. default: 1
+    maximum_waypoint_distance: 0.001 # added by Tariq to improve the fidelity of the collision checker
   BFMTkConfigDefault:
     type: geometric::BFMT
     num_samples: 1000  # number of states that the planner should sample. default: 1000

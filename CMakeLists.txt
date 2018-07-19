@@ -62,6 +62,8 @@ include_directories(${catkin_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
 
 #the following is added from motion_planning_api
+
+
 add_executable(motion_planning_restorebot src/motion_planning_restorebot.cpp)
 target_link_libraries(motion_planning_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS motion_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
@@ -73,6 +75,11 @@ install(TARGETS chomp_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTI
 add_executable(hybrid_planning_restorebot src/hybrid_planning_restorebot.cpp)
 target_link_libraries(hybrid_planning_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 install(TARGETS hybrid_planning_restorebot DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+add_executable(collision_test src/collision_test.cpp)
+target_link_libraries(collision_test ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+install(TARGETS collision_test DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 
 add_executable(fmt_shortcut_restorebot src/fmt_shortcut_restorebot.cpp)
 target_link_libraries(fmt_shortcut_restorebot ${catkin_LIBRARIES} ${Boost_LIBRARIES})

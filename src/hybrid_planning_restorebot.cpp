@@ -116,6 +116,16 @@ int main(int argc, char** argv) {
 
     /* Sleep a little to allow time to startup rviz, etc..
        This ensures that visual_tools.prompt() isn't lost in a sea of logs*/
+
+
+    ros::Publisher display_publisher_stomp =
+      node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path_stomp", 1, true);
+    moveit_msgs::DisplayTrajectory display_trajectory_stomp;
+
+    ros::Publisher display_publisher =
+      node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
+    moveit_msgs::DisplayTrajectory display_trajectory;
+    
     ros::Duration(10).sleep();
 
     /* We can also use visual_tools to wait for user input */
@@ -223,9 +233,6 @@ int main(int argc, char** argv) {
     {
       // Visualize the result
     // ^^^^^^^^^^^^^^^^^^^^
-    ros::Publisher display_publisher =
-        node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
-    moveit_msgs::DisplayTrajectory display_trajectory;
 
 
 
@@ -465,9 +472,7 @@ int main(int argc, char** argv) {
 
 
 
-      ros::Publisher display_publisher_stomp =
-          node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path_stomp", 1, true);
-      moveit_msgs::DisplayTrajectory display_trajectory_stomp;
+
 
       /* Visualize the trajectory */
       ROS_INFO("Visualizing the trajectory");
