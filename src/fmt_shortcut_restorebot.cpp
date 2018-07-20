@@ -120,7 +120,7 @@ static bool clearPath(moveit_msgs::MotionPlanResponse *response, planning_scene:
   while(notDoneFlag) 
   {
 
-    if(  ((BPoints - APoints) /(numPoints-1)).norm() <= 0.1   ) //checks if the distance is within a small enough margin
+    if(  ((BPoints - APoints) /(numPoints-1)).norm() <= 1.0   ) //checks if the distance is within a small enough margin
     {
       notDoneFlag = false;
     } 
@@ -538,7 +538,7 @@ int main(int argc, char** argv) {
 	    //Displays the Cost
 	    ROS_INFO_STREAM("FMT Cost :: " + std::to_string(determineCost(&response)));
       checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
-      visual_tools.prompt("Please press next for Shortcut");
+      visual_tools.prompt("Please press next for Shortcut Algorithm");
 
 	    //Uncomment below to Publish JointTrajectory message for rqt plot visualization
 	    //visualizePlot(&response);
@@ -567,57 +567,62 @@ int main(int argc, char** argv) {
       //Check the points -> see if they're in collision with the environment
       //If they encounter a collision anytime during the path, then shortcut isn't viable
 
-      // ROS_INFO_STREAM("Pre-processing size :: " + std::to_string(response.trajectory.joint_trajectory.points.size()));
+      ROS_INFO_STREAM("Pre-processing size :: " + std::to_string(response.trajectory.joint_trajectory.points.size()));
 
-      // Shortcut(&response,&planning_scene,joint_model_group,&(*robot_state),30,3);
+      Shortcut(&response,&planning_scene,joint_model_group,&(*robot_state),30,3);
 
-      // ROS_INFO_STREAM("Post-Shortcut size :: " + std::to_string(response.trajectory.joint_trajectory.points.size()));
-      // checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
+      ROS_INFO_STREAM("Post-Shortcut size :: " + std::to_string(response.trajectory.joint_trajectory.points.size()));
+      checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
+      display_trajectory.trajectory_start = response.trajectory_start;  //this might suggest why it starts off the wrong way sometimes?
+      display_trajectory.trajectory.clear();
+      display_trajectory.trajectory.push_back(response.trajectory);
+      display_publisher.publish(display_trajectory);
+      visual_tools.prompt("Press next to repopulate trajectory for more waypoints");
 
-      // populatePath(&response);
-      // ROS_INFO_STREAM("Post Population implementation :: "+std::to_string(response.trajectory.joint_trajectory.points.size()));
-
-
-      // //Add Time Parameterization to Follow Controller Limits
-      // robot_trajectory::RobotTrajectory rt(robot_model, PLANNING_GROUP);
-      // trajectory_msgs::JointTrajectory *joint_trajectory_msg = &(response.trajectory.joint_trajectory);
-      // rt.setRobotTrajectoryMsg(start_state, *joint_trajectory_msg);
-      // trajectory_processing::IterativeParabolicTimeParameterization iptp;
-      // bool time_par_suc = iptp.computeTimeStamps(rt);
-      // ROS_INFO("Computed time stamp %s", time_par_suc?"SUCCEEDED":"FAILED");
-      // if(time_par_suc)
-      // {
-      //   rt.getRobotTrajectoryMsg((response.trajectory));
-      // }
-
-      // checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
-      // //Send the trajectory to RViz for Visualization
-      // display_trajectory.trajectory_start = response.trajectory_start;  //this might suggest why it starts off the wrong way sometimes?
-      // display_trajectory.trajectory.clear();
-      // display_trajectory.trajectory.push_back(response.trajectory);
-      // display_publisher.publish(display_trajectory);
+      populatePath(&response);
+      ROS_INFO_STREAM("Post Population implementation :: "+std::to_string(response.trajectory.joint_trajectory.points.size()));
 
 
-      // outputFile.open(path,std::ios::app);
-      // outputFile << "Shortcut{" +std::to_string(main_loop_iter) + "} = [";
-      // numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
-      // size1 = response.trajectory.joint_trajectory.points.size();
-      // for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
-      //   for(unsigned j = 0; j < numJointsTariq; j++) {
-      //     outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
-      //     outputFile << " ";
-      //   }
-      //   if(iter+1 != size1){
-      //     outputFile << ";" <<std::endl;
-      //   } else {
-      //     outputFile << "]" << std::endl;
-      //   }
-      // }
-      // outputFile << std::endl;
-      // outputFile.close();
-      // ROS_INFO_STREAM("Finished creating log file");
+      //Add Time Parameterization to Follow Controller Limits
+      robot_trajectory::RobotTrajectory rt(robot_model, PLANNING_GROUP);
+      trajectory_msgs::JointTrajectory *joint_trajectory_msg = &(response.trajectory.joint_trajectory);
+      rt.setRobotTrajectoryMsg(start_state, *joint_trajectory_msg);
+      trajectory_processing::IterativeParabolicTimeParameterization iptp;
+      bool time_par_suc = iptp.computeTimeStamps(rt);
+      ROS_INFO("Computed time stamp %s", time_par_suc?"SUCCEEDED":"FAILED");
+      if(time_par_suc)
+      {
+        rt.getRobotTrajectoryMsg((response.trajectory));
+      }
 
-      // ROS_INFO_STREAM("Final Plan Cost :: " + std::to_string(determineCost(&response)));
+      checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
+      //Send the trajectory to RViz for Visualization
+      display_trajectory.trajectory_start = response.trajectory_start;  //this might suggest why it starts off the wrong way sometimes?
+      display_trajectory.trajectory.clear();
+      display_trajectory.trajectory.push_back(response.trajectory);
+      display_publisher.publish(display_trajectory);
+
+
+      outputFile.open(path,std::ios::app);
+      outputFile << "Shortcut{" +std::to_string(main_loop_iter) + "} = [";
+      numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
+      size1 = response.trajectory.joint_trajectory.points.size();
+      for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
+        for(unsigned j = 0; j < numJointsTariq; j++) {
+          outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
+          outputFile << " ";
+        }
+        if(iter+1 != size1){
+          outputFile << ";" <<std::endl;
+        } else {
+          outputFile << "]" << std::endl;
+        }
+      }
+      outputFile << std::endl;
+      outputFile.close();
+      ROS_INFO_STREAM("Finished creating log file");
+
+      ROS_INFO_STREAM("Final Plan Cost :: " + std::to_string(determineCost(&response)));
 
     }
     ROS_INFO_STREAM("Current iteration :: "+std::to_string(main_loop_iter));

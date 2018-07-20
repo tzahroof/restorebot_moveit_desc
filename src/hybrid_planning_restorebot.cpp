@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
   //  moveit::core::robotStateToRobotStateMsg(*robot_state,req.start_state);
 
     //set start state to be 0 again.
-    req.allowed_planning_time = 3;
+    req.allowed_planning_time = 4;
 
       // robot_state::RobotState goal_state(robot_model);
       // goal_state.setJointGroupPositions(joint_model_group, response.trajectory.joint_trajectory.points.back().positions);
