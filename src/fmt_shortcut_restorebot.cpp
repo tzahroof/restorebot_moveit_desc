@@ -132,7 +132,6 @@ static bool clearPath(moveit_msgs::MotionPlanResponse *response, planning_scene:
 
   //std::vector<double> origJointGroupPositions = getJointPositions(joint_model_group);
   //I NEED A WAY TO RESEt THE JOINt POSItionS to WHAT THEY WERE
-  bool retBool = true;
   for(int i = 0; i <= numPoints-1; i++) 
   {
     //check if each point is collision free
@@ -155,48 +154,47 @@ static bool clearPath(moveit_msgs::MotionPlanResponse *response, planning_scene:
     if(c_res.collision)
     {
       //This substate in trajectory, so we can't substitute
-      std::cout << "Here are the values for the Point A in the trajectory :: \n" << APoints;
-      std::cout << "Here are the values for the Point B in the trajectory :: \n" << BPoints;
-      std::cout << "APoints - BPoints :: \n" << APoints - BPoints << std::endl;
-      std::cout << "A+(BPoints-APoints)/(numPoints-1)*i\n" <<substateVector << std::endl;
+      // std::cout << "Here are the values for the Point A in the trajectory :: \n" << APoints;
+      // std::cout << "Here are the values for the Point B in the trajectory :: \n" << BPoints;
+      // std::cout << "APoints - BPoints :: \n" << APoints - BPoints << std::endl;
+      // std::cout << "A+(BPoints-APoints)/(numPoints-1)*i\n" <<substateVector << std::endl;
 
-      std::cout << "Converted back into std::vector :: ";
-      for(int j = 0; j < substate_joint_vals.size();j++) 
-      {
-        std::cout << substate_joint_vals[j] << " ";
-      }
-      std::cout << std::endl;
-      std::cout << "Here is the robot model's joint positions :: ";
-      std::vector<double> whatISent;
-      robot_state->copyJointGroupPositions(joint_model_group, whatISent);
-      for(int j = 0;j < whatISent.size(); j++ )
-      {
-        std:: cout << whatISent[j] << " ";
-      }
-      std::cout << std::endl;
-      std::cout <<"This is what i is :: " << i << "\n";
-      ROS_INFO_STREAM("DETECTED COLLISION");
-      retBool = false;
+      // std::cout << "Converted back into std::vector :: ";
+      // for(int j = 0; j < substate_joint_vals.size();j++) 
+      // {
+      //   std::cout << substate_joint_vals[j] << " ";
+      // }
+      // std::cout << std::endl;
+      // std::cout << "Here is the robot model's joint positions :: ";
+      // std::vector<double> whatISent;
+      // robot_state->copyJointGroupPositions(joint_model_group, whatISent);
+      // for(int j = 0;j < whatISent.size(); j++ )
+      // {
+      //   std:: cout << whatISent[j] << " ";
+      // }
+      // std::cout << std::endl;
+      // std::cout <<"This is what i is :: " << i << "\n";
+      //ROS_INFO_STREAM("DETECTED COLLISION");
       return false; //change?
     }
   }
   //std::printf("We are leaving clearPath\n");
-  return retBool;
+  return true;
 }
 
 static bool checkIfPathHasCollisions(moveit_msgs::MotionPlanResponse *response, planning_scene::PlanningScenePtr planning_scene,const robot_state::JointModelGroup *joint_model_group, robot_state::RobotState *robot_state)
 {
-  ROS_INFO_STREAM("Checking if the path has any collisions");
+  //ROS_INFO_STREAM("Checking if the path has any collisions");
   bool pass = false;
   for(int i = 0; i < response->trajectory.joint_trajectory.points.size()-1;i++)
   {
     if(clearPath(response, planning_scene, joint_model_group, robot_state, i, i+1, 3) == false)
     {
-      ROS_INFO("checkIfPathHasCollisions Sensed a collision between %d and %d\n",i, i+1);
+      //ROS_INFO("checkIfPathHasCollisions Sensed a collision between %d and %d\n",i, i+1);
       pass = true;
     }
   }
-  ROS_INFO_STREAM("Finished checking if path has collisions");
+  //ROS_INFO_STREAM("Finished checking if path has collisions");
 
 
   for(int i = 0; i < response->trajectory.joint_trajectory.points.size(); i++)
@@ -217,7 +215,7 @@ static bool checkIfPathHasCollisions(moveit_msgs::MotionPlanResponse *response, 
     if(c_res.collision)
     {
       //This substate in trajectory, so we can't substitute
-      ROS_INFO_STREAM("My WayPoint Checker also found a collision...");
+      //ROS_INFO_STREAM("My WayPoint Checker also found a collision...");
     }
 
   }
@@ -246,7 +244,7 @@ static void Shortcut(moveit_msgs::MotionPlanResponse *response, planning_scene::
     {
       if(trajSize == 0)
       {
-        ROS_INFO_STREAM("Trajectory has "+std::to_string(trajSize)+" points\n");
+        //ROS_INFO_STREAM("Trajectory has "+std::to_string(trajSize)+" points\n");
       }
 
       break; //trajectory has been reduced to a straightline between two points, is just a single point, or doesn't have any points
@@ -278,19 +276,19 @@ static void Shortcut(moveit_msgs::MotionPlanResponse *response, planning_scene::
       ROS_INFO("Erased between %d and %d",a,b);
       if(checkIfPathHasCollisions(response, *planning_scene, joint_model_group, robot_state)==true)
       {
-        ROS_INFO_STREAM("***WE HAVE GOT A PROBLEM FOLKS!!!!!***");
-        ROS_INFO("Occurred after removing portion between %d and %d",a, b);
-        ROS_INFO_STREAM("Clear Path says:");
+        //ROS_INFO_STREAM("***WE HAVE GOT A PROBLEM FOLKS!!!!!***");
+        //ROS_INFO("Occurred after removing portion between %d and %d",a, b);
+        //ROS_INFO_STREAM("Clear Path says:");
         if(clearPath(response,*planning_scene,joint_model_group,robot_state,a,a+1,3))
         {
-          ROS_INFO("\tPath is clear. Problematic");
+          //ROS_INFO("\tPath is clear. Problematic");
         }else {
-          ROS_INFO("\tPath is not clear.");
+          //ROS_INFO("\tPath is not clear.");
         }
       }
     }
   }
-  ROS_INFO_STREAM("Leaving Shortcut");
+  //ROS_INFO_STREAM("Leaving Shortcut");
 }
 
 
@@ -536,9 +534,9 @@ int main(int argc, char** argv) {
 	    //^^^^^^^^^^^^^^^
 
 	    //Displays the Cost
-	    ROS_INFO_STREAM("FMT Cost :: " + std::to_string(determineCost(&response)));
+	    ROS_INFO_STREAM("BFMT Cost :: " + std::to_string(determineCost(&response)));
       checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
-      visual_tools.prompt("Please press next for Shortcut Algorithm");
+      //visual_tools.prompt("Please press next for Shortcut Algorithm");
 
 	    //Uncomment below to Publish JointTrajectory message for rqt plot visualization
 	    //visualizePlot(&response);
@@ -577,7 +575,7 @@ int main(int argc, char** argv) {
       display_trajectory.trajectory.clear();
       display_trajectory.trajectory.push_back(response.trajectory);
       display_publisher.publish(display_trajectory);
-      visual_tools.prompt("Press next to repopulate trajectory for more waypoints");
+      //visual_tools.prompt("Press next to repopulate trajectory for more waypoints");
 
       populatePath(&response);
       ROS_INFO_STREAM("Post Population implementation :: "+std::to_string(response.trajectory.joint_trajectory.points.size()));
@@ -626,7 +624,7 @@ int main(int argc, char** argv) {
 
     }
     ROS_INFO_STREAM("Current iteration :: "+std::to_string(main_loop_iter));
-    visual_tools.prompt("Pleas press next");
+    //visual_tools.prompt("Pleas press next");
 
   }
 
