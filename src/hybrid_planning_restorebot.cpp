@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
   ros::AsyncSpinner spinner(1);
   spinner.start();
   ros::NodeHandle node_handle("~");
-  const int max_Iter = 50;
+  const int max_Iter = 100;
   int numStompFails = 0;
   int numSeedFails = 0;
   double avgTime = 0.0;
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
   //  moveit::core::robotStateToRobotStateMsg(*robot_state,req.start_state);
 
     //set start state to be 0 again.
-    req.allowed_planning_time = 4;
+    req.allowed_planning_time = 3;
 
       // robot_state::RobotState goal_state(robot_model);
       // goal_state.setJointGroupPositions(joint_model_group, response.trajectory.joint_trajectory.points.back().positions);

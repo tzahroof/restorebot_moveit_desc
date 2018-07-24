@@ -230,7 +230,7 @@ static bool checkIfPathHasCollisions(moveit_msgs::MotionPlanResponse *response, 
 static void Shortcut(moveit_msgs::MotionPlanResponse *response, planning_scene::PlanningScenePtr *planning_scene, const robot_state::JointModelGroup *joint_model_group, robot_state::RobotState *robot_state, int numShortcutLoops, int defaultNumPoints)
 {
   //TODO: change this method so that it only manipulates joint_trajectory.points
-  ROS_INFO_STREAM("Entering shortcut");
+  //ROS_INFO_STREAM("Entering shortcut");
   checkIfPathHasCollisions(response, *planning_scene, joint_model_group, robot_state);
 
   for(int loop_iter = 0; loop_iter < numShortcutLoops; loop_iter++) 
@@ -242,11 +242,7 @@ static void Shortcut(moveit_msgs::MotionPlanResponse *response, planning_scene::
 
     if(trajSize <= 2)
     {
-      if(trajSize == 0)
-      {
-        //ROS_INFO_STREAM("Trajectory has "+std::to_string(trajSize)+" points\n");
-      }
-
+      ROS_INFO_STREAM("Trajectory has "+std::to_string(trajSize)+" points\n");
       break; //trajectory has been reduced to a straightline between two points, is just a single point, or doesn't have any points
     }
     else if(trajSize == 3)
@@ -273,19 +269,19 @@ static void Shortcut(moveit_msgs::MotionPlanResponse *response, planning_scene::
       // std::printf("a :: %d, b :: %d \n",a, b);
       // ROS_INFO_STREAM("pre-erase :: "+ std::to_string(response->trajectory.joint_trajectory.points.size()));
       response->trajectory.joint_trajectory.points.erase(response->trajectory.joint_trajectory.points.begin()+a+1, response->trajectory.joint_trajectory.points.begin()+b);
-      ROS_INFO("Erased between %d and %d",a,b);
-      if(checkIfPathHasCollisions(response, *planning_scene, joint_model_group, robot_state)==true)
-      {
-        //ROS_INFO_STREAM("***WE HAVE GOT A PROBLEM FOLKS!!!!!***");
-        //ROS_INFO("Occurred after removing portion between %d and %d",a, b);
-        //ROS_INFO_STREAM("Clear Path says:");
-        if(clearPath(response,*planning_scene,joint_model_group,robot_state,a,a+1,3))
-        {
-          //ROS_INFO("\tPath is clear. Problematic");
-        }else {
-          //ROS_INFO("\tPath is not clear.");
-        }
-      }
+      // ROS_INFO("Erased between %d and %d",a,b);
+      // if(checkIfPathHasCollisions(response, *planning_scene, joint_model_group, robot_state)==true)
+      // {
+      //   ROS_INFO_STREAM("***WE HAVE GOT A PROBLEM FOLKS!!!!!***");
+      //   ROS_INFO("Occurred after removing portion between %d and %d",a, b);
+      //   ROS_INFO_STREAM("Clear Path says:");
+      //   if(clearPath(response,*planning_scene,joint_model_group,robot_state,a,a+1,3))
+      //   {
+      //     ROS_INFO("\tPath is clear. Problematic");
+      //   }else {
+      //     ROS_INFO("\tPath is not clear.");
+      //   }
+      // }
     }
   }
   //ROS_INFO_STREAM("Leaving Shortcut");
@@ -323,6 +319,9 @@ int main(int argc, char** argv) {
     /* Create a RobotState and JointModelGroup to keep track of the current robot pose and planning group*/
     robot_state::RobotStatePtr robot_state(new robot_state::RobotState(robot_model));
     const robot_state::JointModelGroup* joint_model_group = robot_state->getJointModelGroup(PLANNING_GROUP);
+
+    /* Create an IterativeParabolicTimeParameterization object to add velocity/acceleration to waypoints after Shortcut*/
+    trajectory_processing::IterativeParabolicTimeParameterization iptp;
 
     // Using the :moveit_core:`RobotModel`, we can construct a
     // :planning_scene:`PlanningScene` that maintains the state of
@@ -365,6 +364,7 @@ int main(int argc, char** argv) {
 
     /* Batch publishing is used to reduce the number of messages being sent to RViz for large visualizations */
     visual_tools.trigger();
+
 
     /* Sleep a little to allow time to startup rviz, etc..
        This ensures that visual_tools.prompt() isn't lost in a sea of logs*/
@@ -427,6 +427,8 @@ int main(int argc, char** argv) {
 
     //Uncomment the following code if a desired final end-effector position is known
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    //  NOTE: STOMP, FMT, and BFMT need JointState goals. look into the setApproximateJointState if
+    //  position is desired. The code will determine a joint state by inverse kinematics.
     // geometry_msgs::PoseStamped pose;
 
     // //PoseStamped apparently uses quaternion to avoid singularities (orientation)
@@ -504,38 +506,40 @@ int main(int argc, char** argv) {
 	    moveit_msgs::MotionPlanResponse response;
 	    res.getMessage(response);
 
+      avgTime += response.planning_time;
 
 	    display_trajectory.trajectory_start = response.trajectory_start;
 	    display_trajectory.trajectory.push_back(response.trajectory);
 	    display_publisher.publish(display_trajectory);
 
-      std::string path = "/home/tariq/Documents/fmt_shortcut_RECORDS.m";
-      std::ofstream outputFile;
-      outputFile.open(path,std::ios::app);
-      outputFile << "FMT{" +std::to_string(main_loop_iter) + "} = [";
-      std::vector<int>::size_type numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
-      std::vector<int>::size_type size1 = response.trajectory.joint_trajectory.points.size();
-      for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
-        for(unsigned j = 0; j < numJointsTariq; j++) {
-          outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
-          outputFile << " ";
-        }
-        if(iter+1 != size1){
-          outputFile << ";" <<std::endl;
-        } else {
-          outputFile << "]" << std::endl;
-        }
-      }
-      outputFile << std::endl;
-      outputFile.close();
-      ROS_INFO_STREAM("Finished creating log file");
+      // UNCOMMENT FOLLOWING CODE IF YOU WISH TO SAVE THE FMT TRAJECTORY TO A FILE. DON't
+      // FORGET TO CHANGE THE PATH DIRECTORY
+      // std::string path = "/home/tariq/Documents/fmt_shortcut_RECORDS.m";
+      // std::ofstream outputFile;
+      // outputFile.open(path,std::ios::app);
+      // outputFile << "FMT{" +std::to_string(main_loop_iter) + "} = [";
+      // std::vector<int>::size_type numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
+      // std::vector<int>::size_type size1 = response.trajectory.joint_trajectory.points.size();
+      // for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
+      //   for(unsigned j = 0; j < numJointsTariq; j++) {
+      //     outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
+      //     outputFile << " ";
+      //   }
+      //   if(iter+1 != size1){
+      //     outputFile << ";" <<std::endl;
+      //   } else {
+      //     outputFile << "]" << std::endl;
+      //   }
+      // }
+      // outputFile << std::endl;
+      // outputFile.close();
+      // ROS_INFO_STREAM("Finished creating log file");
 
 	    //Extra Maneuvers
 	    //^^^^^^^^^^^^^^^
 
 	    //Displays the Cost
 	    ROS_INFO_STREAM("BFMT Cost :: " + std::to_string(determineCost(&response)));
-      checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
       //visual_tools.prompt("Please press next for Shortcut Algorithm");
 
 	    //Uncomment below to Publish JointTrajectory message for rqt plot visualization
@@ -551,74 +555,63 @@ int main(int argc, char** argv) {
     /////////////////////////
 
 
-
-    //Shortcut method:
-    //Randomly sample two nodes within the trajectory
-    //Check whether we can connect those two nodes without collisions->
-      //if so, we remove the nodes between those two
-    //Loop above until satisfied
-
-
-    //For discretizing the collision-checker:
-      //Discretize the distance into a bunch of substates
-      //Ensure we don't mess up wiht a trajectory of 0 points or whatever
-      //Check the points -> see if they're in collision with the environment
-      //If they encounter a collision anytime during the path, then shortcut isn't viable
-
       ROS_INFO_STREAM("Pre-processing size :: " + std::to_string(response.trajectory.joint_trajectory.points.size()));
-
+      double shortcutTime= ros::Time::now().toSec();
       Shortcut(&response,&planning_scene,joint_model_group,&(*robot_state),30,3);
 
-      ROS_INFO_STREAM("Post-Shortcut size :: " + std::to_string(response.trajectory.joint_trajectory.points.size()));
-      checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
-      display_trajectory.trajectory_start = response.trajectory_start;  //this might suggest why it starts off the wrong way sometimes?
-      display_trajectory.trajectory.clear();
-      display_trajectory.trajectory.push_back(response.trajectory);
-      display_publisher.publish(display_trajectory);
-      //visual_tools.prompt("Press next to repopulate trajectory for more waypoints");
+      // ROS_INFO_STREAM("Post-Shortcut size :: " + std::to_string(response.trajectory.joint_trajectory.points.size()));
+      // display_trajectory.trajectory_start = response.trajectory_start;  //this might suggest why it starts off the wrong way sometimes?
+      // display_trajectory.trajectory.clear();
+      // display_trajectory.trajectory.push_back(response.trajectory);
+      // display_publisher.publish(display_trajectory);
+      // visual_tools.prompt("Press next to repopulate trajectory for more waypoints");
 
       populatePath(&response);
-      ROS_INFO_STREAM("Post Population implementation :: "+std::to_string(response.trajectory.joint_trajectory.points.size()));
+      // ROS_INFO_STREAM("Post Population implementation :: "+std::to_string(response.trajectory.joint_trajectory.points.size()));
 
 
       //Add Time Parameterization to Follow Controller Limits
       robot_trajectory::RobotTrajectory rt(robot_model, PLANNING_GROUP);
       trajectory_msgs::JointTrajectory *joint_trajectory_msg = &(response.trajectory.joint_trajectory);
       rt.setRobotTrajectoryMsg(start_state, *joint_trajectory_msg);
-      trajectory_processing::IterativeParabolicTimeParameterization iptp;
       bool time_par_suc = iptp.computeTimeStamps(rt);
+      shortcutTime = ros::Time::now().toSec() - shortcutTime;
+
+      //TODO: Check whether these time stamps have done anything
       ROS_INFO("Computed time stamp %s", time_par_suc?"SUCCEEDED":"FAILED");
       if(time_par_suc)
       {
         rt.getRobotTrajectoryMsg((response.trajectory));
+        avgTime += shortcutTime;
+        ROS_INFO("Shortcut Time :: %f",shortcutTime);
       }
 
-      checkIfPathHasCollisions(&response,planning_scene,joint_model_group,&(*robot_state));
       //Send the trajectory to RViz for Visualization
       display_trajectory.trajectory_start = response.trajectory_start;  //this might suggest why it starts off the wrong way sometimes?
       display_trajectory.trajectory.clear();
       display_trajectory.trajectory.push_back(response.trajectory);
       display_publisher.publish(display_trajectory);
 
-
-      outputFile.open(path,std::ios::app);
-      outputFile << "Shortcut{" +std::to_string(main_loop_iter) + "} = [";
-      numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
-      size1 = response.trajectory.joint_trajectory.points.size();
-      for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
-        for(unsigned j = 0; j < numJointsTariq; j++) {
-          outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
-          outputFile << " ";
-        }
-        if(iter+1 != size1){
-          outputFile << ";" <<std::endl;
-        } else {
-          outputFile << "]" << std::endl;
-        }
-      }
-      outputFile << std::endl;
-      outputFile.close();
-      ROS_INFO_STREAM("Finished creating log file");
+      // UNCOMMENT FOLLOWING CODE IF YOU WISH TO SAVE THE FINAL TRAJECTORY TO A FILE. DON't
+      // FORGET TO CHANGE THE PATH DIRECTORY
+      // outputFile.open(path,std::ios::app);
+      // outputFile << "Shortcut{" +std::to_string(main_loop_iter) + "} = [";
+      // numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
+      // size1 = response.trajectory.joint_trajectory.points.size();
+      // for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
+      //   for(unsigned j = 0; j < numJointsTariq; j++) {
+      //     outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
+      //     outputFile << " ";
+      //   }
+      //   if(iter+1 != size1){
+      //     outputFile << ";" <<std::endl;
+      //   } else {
+      //     outputFile << "]" << std::endl;
+      //   }
+      // }
+      // outputFile << std::endl;
+      // outputFile.close();
+      // ROS_INFO_STREAM("Finished creating log file");
 
       ROS_INFO_STREAM("Final Plan Cost :: " + std::to_string(determineCost(&response)));
 
@@ -629,6 +622,7 @@ int main(int argc, char** argv) {
   }
 
   avgTime = avgTime/(max_Iter-numSeedFails);
+  //TODO: add Average Time functionality
   ROS_INFO_STREAM("Average Time :: " +std::to_string(avgTime));
   ROS_INFO_STREAM("Number of SEED failures :: " +std::to_string(numSeedFails));
 
@@ -665,9 +659,10 @@ static void visualizePlot(moveit_msgs::MotionPlanResponse *response, ros::Publis
 
     std::vector<int>::size_type size1 = response->trajectory.joint_trajectory.points.size();
 
-    for(unsigned iter = 0; iter < size1; iter++) {
-    	response->trajectory.joint_trajectory.points[iter].time_from_start = ros::Duration(0.1*iter);
-    }
+    // UNCOMMENT BELOW IF THERE IS NO ASSOCIATED TIME WITH THE TRAJECTORY
+    // for(unsigned iter = 0; iter < size1; iter++) {
+    // 	response->trajectory.joint_trajectory.points[iter].time_from_start = ros::Duration(0.1*iter);
+    // }
     rqt_publisher->publish(response->trajectory.joint_trajectory);
 
 }
