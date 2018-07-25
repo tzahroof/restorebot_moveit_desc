@@ -32,7 +32,6 @@ find_package(catkin REQUIRED
     moveit_ros_planning_interface
     pluginlib
     geometric_shapes
-    industrial_trajectory_filters
 )
 
 find_package(Boost REQUIRED system filesystem date_time thread)
@@ -52,7 +51,6 @@ catkin_package(
     moveit_visual_tools
     moveit_ros_planning_interface
     interactive_markers
-    industrial_trajectory_filters
   DEPENDS
     EIGEN3
 )
