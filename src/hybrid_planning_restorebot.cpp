@@ -29,6 +29,23 @@ Motion_plannning_api_tutorial.cpp headers
 #include <iostream>
 #include <fstream>
 
+static double determineCost(trajectory_msgs::JointTrajectory *joint_trajectory)
+{
+
+    double cost = 0;
+    std::vector<int>::size_type numJointsTariq = joint_trajectory->points[0].positions.size();
+    std::vector<int>::size_type size1 = joint_trajectory->points.size();
+
+    for(unsigned j = 0; j < numJointsTariq; j++) {
+      double costOfCurrentMovement = 0;
+      for(unsigned iter = 0; iter < size1-1; iter++) {
+            costOfCurrentMovement += 
+              fabs((joint_trajectory->points[iter+1].positions[j] - joint_trajectory->points[iter].positions[j]));
+      }
+      cost += sqrt(costOfCurrentMovement);
+    }
+    return cost;
+}
 
 
 int main(int argc, char** argv) {
@@ -78,7 +95,6 @@ int main(int argc, char** argv) {
     //Set up a publisher to advertise the JointTrajectories to the graphing tool
     ros::Publisher rqt_publisher = node_handle.advertise<trajectory_msgs::JointTrajectory>("/rqt_publisher/", 1);
 
-    //pray this works- setting planning time to 2 seconds see if FMTk works properly
 
     // Visualization
     // ^^^^^^^^^^^^^
@@ -90,14 +106,6 @@ int main(int argc, char** argv) {
 
     namespace rvt = rviz_visual_tools;
     moveit_visual_tools::MoveItVisualTools visual_tools("platform_base");
-
-
-    /*
-    original line: 
-      moveit_visual_tools::MoveItVisualTools visual_tools("panda_link0");
-    There doesn't seem to be a panda_link0 joint that's moveable, so I'm going to assume that
-    it's the base joint.
-    */
 
 
     visual_tools.deleteAllMarkers();
@@ -126,10 +134,7 @@ int main(int argc, char** argv) {
       node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     moveit_msgs::DisplayTrajectory display_trajectory;
     
-    ros::Duration(10).sleep();
-
-    /* We can also use visual_tools to wait for user input */
-   // visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to start the demo");
+    ros::Duration(5).sleep();
 
 
   for(int main_loop_iter = 0; main_loop_iter <max_Iter; main_loop_iter++) { //change number of iterations
@@ -259,34 +264,8 @@ int main(int argc, char** argv) {
     rqt_publisher.publish(response.trajectory.joint_trajectory); //TODO: Remove this line
 
 
-   //  double cost = 0;
-   //  for(unsigned iter = 0; iter < size1-1; iter++) {
-   //      std::vector<int>::size_type numJointsTariq= response.trajectory.joint_trajectory.points[iter].positions.size();
-   //      double costOfCurrentMovement = 0;
-   //     	for(unsigned j = 0; j < numJointsTariq; j++) {
-  	//     costOfCurrentMovement += 
-  	// 	pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
-  	// }
-   //      cost += sqrt(costOfCurrentMovement);
-   //  }
-
-
-    //COST CALCULATION
-    //TODO: Cost is currently the sum of the distances each joint travels
-    double cost = 0;
-    std::vector<int>::size_type numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
-
-    for(unsigned j = 0; j < numJointsTariq; j++) {
-      double costOfCurrentMovement = 0;
-      for(unsigned iter = 0; iter < size1-1; iter++) {
-            costOfCurrentMovement += 
-              pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
-      }
-      cost += sqrt(costOfCurrentMovement);
-    }
-
     //Displays the norm
-    ROS_INFO_STREAM(cost);
+    ROS_INFO_STREAM(determineCost(&(response.trajectory.joint_trajectory)));
 
     
 
@@ -395,43 +374,6 @@ int main(int argc, char** argv) {
       req.trajectory_constraints.constraints.push_back(std::move(c));
     }
 
-  //TARIQ KINDA WRONG
-   // //Now set up a joint space goal
-   //  robot_state::RobotState goal_state(robot_model);
-   //  std::vector<double> goal_joint_values;
-   //  for(size_t j =0; j < dof; j++)
-   //  {
-   //    goal_joint_values.push_back(seed.points[seed.points.size()-1].positions[j]);
-   //  }
-   //  goal_state.setJointGroupPositions(joint_model_group,goal_joint_values);
-   //  moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
-   //  req.goal_constraints.clear();
-   //  req.goal_constraints.push_back(joint_goal);
-
-   // robot_state::RobotState goal_state(robot_model);
-   // std::vector<double> joint_values = {0.0 , 0.6 , 0.5 , 0.6 , 0.0 , 0.0 , 0.0 };
-   // goal_state.setJointGroupPositions(joint_model_group, joint_values);
-   // moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
-   // req.goal_constraints.clear();
-   // req.goal_constraints.push_back(joint_goal);
-
-    // Call the planner and visualize the trajectory
-    /* Re-construct the planning context */
-
-
-
-    //ask EE to stay level
-    // geometry_msgs::QuaternionStamped quaternion;
-    // quaternion.header.frame_id = "platform_base";
-    // quaternion.quaternion.w = 1.0;
-    // req.path_constraints = kinematic_constraints::constructGoalConstraints("armLink7square", quaternion);
-
-    // req.workspace_parameters.min_corner.x = req.workspace_parameters.min_corner.y =
-    //   req.workspace_parameters.min_corner.z = -11 .0;
-    // req.workspace_parameters.max_corner.x = req.workspace_parameters.max_corner.y =
-    //   req.workspace_parameters.max_corner.z = 11.0;
-
-
 
     context = planner_instance->getPlanningContext(planning_scene, req, res.error_code_);
     /* Call the Planner */
@@ -450,26 +392,26 @@ int main(int argc, char** argv) {
     //Following code to separate STOMP from FMT*
     if(stompPassed) 
     {
-
-      std::string path = "/home/tariq/Documents/STOMPRecords.m";
-      std::ofstream outputFile;
-      outputFile.open(path,std::ios::app);
-      outputFile << "STOMPSucc{" +std::to_string(main_loop_iter- numStompFails) + "} = [";
-      for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
-        for(unsigned j = 0; j < numJointsTariq; j++) {
-          outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
-          outputFile << " ";
-        }
-        if(iter+1 != size1){
-          outputFile << ";" <<std::endl;
-        } else {
-          outputFile << "]" << std::endl;
-        }
-      }
-      outputFile << std::endl;
-      outputFile.close();
-      ROS_INFO_STREAM("Finished creating log file");
-
+      // Uncomment following if you want to see successful STOMP seeds. Be sure to change the path
+      // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      // std::string path = "/home/tariq/Documents/STOMPRecords.m";
+      // std::ofstream outputFile;
+      // outputFile.open(path,std::ios::app);
+      // outputFile << "STOMPSucc{" +std::to_string(main_loop_iter- numStompFails) + "} = [";
+      // for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
+      //   for(unsigned j = 0; j < numJointsTariq; j++) {
+      //     outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
+      //     outputFile << " ";
+      //   }
+      //   if(iter+1 != size1){
+      //     outputFile << ";" <<std::endl;
+      //   } else {
+      //     outputFile << "]" << std::endl;
+      //   }
+      // }
+      // outputFile << std::endl;
+      // outputFile.close();
+      // ROS_INFO_STREAM("Finished creating log file");
 
 
 
@@ -495,84 +437,37 @@ int main(int argc, char** argv) {
       }
       rqt_publisher.publish(response.trajectory.joint_trajectory);
 
-      //CALCULATE COST
-      //TODO: Cost is currently the sum of the distances each joint travels
-
-      cost = 0;
-      numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
-
-      for(unsigned j = 0; j < numJointsTariq; j++) {
-        double costOfCurrentMovement = 0;
-        for(unsigned iter = 0; iter < size2-1; iter++) {
-              costOfCurrentMovement += 
-                pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
-        }
-        cost += sqrt(costOfCurrentMovement);
-      }
 
       ROS_INFO_STREAM("STOMP Cost (by Tariq) :: ");
-      ROS_INFO_STREAM(cost);
+      ROS_INFO_STREAM(determineCost(&(response.trajectory.joint_trajectory)));
 
-     //  cost = 0;
-     //  for(unsigned iter = 0; iter < size2-1; iter++) {
-     //      std::vector<int>::size_type numJoints= response.trajectory.joint_trajectory.points[iter].positions.size();
-     //      double costOfCurrentMovement = 0;
-     //     	for(unsigned j = 0; j < numJoints; j++) {
-    	//     costOfCurrentMovement += 
-    	// 	pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
-    	// }
-     //      cost += sqrt(costOfCurrentMovement);
-     //  }
-     //  ROS_INFO_STREAM("STOMP Cost (by Tariq) :: ");
-     //  ROS_INFO_STREAM(cost);
-
-      // ROS_INFO("Visualizing the trajectory");
-      // res.getMessage(response);
-      // display_trajectory.trajectory_start = response.trajectory_start;
-      // display_trajectory.trajectory.push_back(response.trajectory);
-
-      // /* Now you should see two planned trajectories in series*/
-      // display_publisher.publish(display_trajectory);
-
-      /* Wait for user input */
-      //visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
+      
     } else {
-      //STOMP failed
-
-  // std::vector<int>::size_type numJointsTariq = response.trajectory.joint_trajectory.points[0].positions.size();
-
-  // for(unsigned j = 0; j < numJointsTariq; j++) {
-  //   double costOfCurrentMovement = 0;
-  //   for(unsigned iter = 0; iter < size1-1; iter++) {
-  //         costOfCurrentMovement += 
-  //           pow((response.trajectory.joint_trajectory.points[iter+1].positions[j] - response.trajectory.joint_trajectory.points[iter].positions[j]),2);
-  //   }
-  //   cost += sqrt(costOfCurrentMovement);
-  // }
-      //std::string path = "/home/tariq/Documents/STOMPFAIL"+std::to_string(main_loop_iter)+".txt";
-      std::string path = "/home/tariq/Documents/STOMPRecords.m";
-      std::ofstream outputFile;
-      outputFile.open(path,std::ios::app);
-      outputFile << "STOMPFail{" +std::to_string(numStompFails) + "} = [";
-      for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
-        for(unsigned j = 0; j < numJointsTariq; j++) {
-          outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
-          outputFile << " ";
-        }
-        if(iter+1 != size1){
-          outputFile << ";" <<std::endl;
-        } else {
-          outputFile << "]" << std::endl;
-        }
-      }
-      outputFile << std::endl;
-      outputFile.close();
-      ROS_ERROR_STREAM("Finished creating log file");
-      numStompFails++;
-      ROS_INFO_STREAM("number of STOMP fails currently");
-      ROS_INFO_STREAM(numStompFails);
-      ROS_INFO_STREAM("Publishing Sampling Based Planning trajectory without smoothing");
-      rqt_publisher.publish(response.trajectory.joint_trajectory);
+      // UNCOMMENT following code to see which STOMP seeds failed. Be sure to change the path.
+      //  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      // std::string path = "/home/tariq/Documents/STOMPRecords.m";
+      // std::ofstream outputFile;
+      // outputFile.open(path,std::ios::app);
+      // outputFile << "STOMPFail{" +std::to_string(numStompFails) + "} = [";
+      // for(unsigned iter = 0; iter < size1; iter++) { //goes through all points 
+      //   for(unsigned j = 0; j < numJointsTariq; j++) {
+      //     outputFile << response.trajectory.joint_trajectory.points[iter].positions[j];
+      //     outputFile << " ";
+      //   }
+      //   if(iter+1 != size1){
+      //     outputFile << ";" <<std::endl;
+      //   } else {
+      //     outputFile << "]" << std::endl;
+      //   }
+      // }
+      // outputFile << std::endl;
+      // outputFile.close();
+      // ROS_ERROR_STREAM("Finished creating log file");
+      // numStompFails++;
+      // ROS_INFO_STREAM("number of STOMP fails currently");
+      // ROS_INFO_STREAM(numStompFails);
+      // ROS_INFO_STREAM("Publishing Sampling Based Planning trajectory without smoothing");
+      // rqt_publisher.publish(response.trajectory.joint_trajectory);
     }
   }
 

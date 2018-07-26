@@ -20,11 +20,12 @@
   </include>
 
 <node name="fmt_shortcut_restorebot" pkg="restorebot_moveit_desc" type="fmt_shortcut_restorebot" respawn="false" launch-prefix="" output="screen">
+    <param name="allowed_planning_time" value="7" />
+    <param name="max_Iter" value = "100" />
+    <param name="max_EdgeLength_Discretization" value="0.1" />
+    <param name="max_EdgeLength_Waypoint_Injection" value="0.2" />
+    <param name="sbp_plugin" value="ompl_interface/OMPLPlanner"/>
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/kinematics.yaml"/>
-    <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
-
-    <param name="sbp_plugin"      value="ompl_interface/OMPLPlanner"/>
-
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/ompl_planning.yaml"/>
   </node>
 
