@@ -22,12 +22,11 @@
   <param name = "collision_detector" value = "Hybrid" />
 
 <node name="hybrid_planning_restorebot" pkg="restorebot_moveit_desc" type="hybrid_planning_restorebot" respawn="false" launch-prefix="$(arg launch_prefix)" output="screen">
-    <rosparam command="load" file="$(find restorebot_moveit_desc)/config/kinematics.yaml"/>
-    <param name="/planning_plugin" value="ompl_interface/OMPLPlanner"/>
-
     <param name="sbp_plugin"      value="ompl_interface/OMPLPlanner"/>
-    <param name="chomp_plugin"    value="stomp_moveit/StompPlannerManager"/>
-
+    <param name="stomp_plugin"    value="stomp_moveit/StompPlannerManager"/>
+    <param name="seed_allowed_planning_time" value="3" />
+    <param name="stomp_allowed_planning_time" value="3" />
+    <rosparam command="load" file="$(find restorebot_moveit_desc)/config/kinematics.yaml"/>
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/ompl_planning.yaml"/>
     <rosparam command="load" file="$(find restorebot_moveit_desc)/config/stomp_planning.yaml"/>
   </node>

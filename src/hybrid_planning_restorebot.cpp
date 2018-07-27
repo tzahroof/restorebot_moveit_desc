@@ -29,6 +29,13 @@ Motion_plannning_api_tutorial.cpp headers
 #include <iostream>
 #include <fstream>
 
+
+/* GLOBAL VARIABLES */
+
+
+
+/*Start Code */
+
 static double determineCost(trajectory_msgs::JointTrajectory *joint_trajectory)
 {
 
@@ -72,8 +79,7 @@ int main(int argc, char** argv) {
   //
   // .. _RobotModelLoader:
   //     http://docs.ros.org/indigo/api/moveit_ros_planning/html/classrobot__model__loader_1_1RobotModelLoader.html
-
-
+    
     const std::string PLANNING_GROUP = "Arm_Group";
     robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
     robot_model::RobotModelPtr robot_model = robot_model_loader.getModel();
@@ -133,8 +139,46 @@ int main(int argc, char** argv) {
     ros::Publisher display_publisher =
       node_handle.advertise<moveit_msgs::DisplayTrajectory>("/move_group/display_planned_path", 1, true);
     moveit_msgs::DisplayTrajectory display_trajectory;
+
+    ros::Publisher planning_scene_diff_publisher = 
+      node_handle.advertise<moveit_msgs::PlanningScene>("/fmt_shortcut_restorebot/planning_scene",1);
+
     
     ros::Duration(5).sleep();
+
+    /*
+      The following adds a collision obstacle into the environment for navigational challenge
+    */
+
+    moveit_msgs::CollisionObject collision_object;
+
+    shape_msgs::SolidPrimitive primitive;
+    primitive.type = primitive.BOX;
+    primitive.dimensions.resize(3);
+    primitive.dimensions[0] = 1.0;
+    primitive.dimensions[1] = 1.0;
+    primitive.dimensions[2] = 1.0;
+
+    geometry_msgs::Pose box_pose;
+    box_pose.orientation.w = 1.0;
+    box_pose.position.x = 2.0;
+    box_pose.position.y = 0.0;
+    box_pose.position.z = 3.0;
+
+    collision_object.primitives.push_back(primitive);
+    collision_object.primitive_poses.push_back(box_pose);
+    collision_object.operation = collision_object.ADD;
+    collision_object.header.frame_id = "/platform_base";
+
+    ROS_INFO("Adding the object into the world");
+    moveit_msgs::PlanningScene planning_scene_msg;
+    planning_scene_msg.world.collision_objects.push_back(collision_object);
+    planning_scene_msg.is_diff = true;
+    planning_scene_diff_publisher.publish(planning_scene_msg);
+
+    planning_scene->processCollisionObjectMsg(collision_object);
+
+
 
 
   for(int main_loop_iter = 0; main_loop_iter <max_Iter; main_loop_iter++) { //change number of iterations
@@ -181,40 +225,58 @@ int main(int argc, char** argv) {
     ROS_INFO("About to move into the Planning section");
     planning_interface::MotionPlanRequest req;
     planning_interface::MotionPlanResponse res;
-    geometry_msgs::PoseStamped pose;
+    req.group_name = PLANNING_GROUP;
+    if(!node_handle.getParam("seed_allowed_planning_time", req.allowed_planning_time))
+    {
+      ROS_ERROR_STREAM("Could not find the seed allowed planning time parameter. Defaulting to 5s");
+      req.allowed_planning_time = 5;
+    }
 
-    //PoseStamped apparently uses quaternion to avoid singularities (orientation)
-    pose.header.frame_id = "platform_base";
-    pose.pose.position.x = 1.3306;
-    pose.pose.position.y = 2;
-    pose.pose.position.z = 3.64;
-    pose.pose.orientation.w = 1.0;
+    //UNCOMMENT following to use EE pose. Said method does NOT work for BFMT, FMT, or STOMP
+    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    // geometry_msgs::PoseStamped pose;
 
-      // A tolerance of 0.01 m is specified in position
-    // and 0.01 radians in orientation
-    std::vector<double> tolerance_pose(3, 0.01);
-    std::vector<double> tolerance_angle(3, 0.01);
+    // //PoseStamped apparently uses quaternion to avoid singularities (orientation)
+    // pose.header.frame_id = "platform_base";
+    // pose.pose.position.x = 1.3306;
+    // pose.pose.position.y = 2;
+    // pose.pose.position.z = 3.64;
+    // pose.pose.orientation.w = 1.0;
 
-      // We will create the request as a constraint using a helper function available
-    // from the
-    // `kinematic_constraints`_
-    // package.
-    //
-    // .. _kinematic_constraints:
-    //     http://docs.ros.org/indigo/api/moveit_core/html/namespacekinematic__constraints.html#a88becba14be9ced36fefc7980271e132
-    req.group_name = "Arm_Group";
-    req.allowed_planning_time = 7;
-    moveit_msgs::Constraints pose_goal =
-        kinematic_constraints::constructGoalConstraints("armLink7square", pose, tolerance_pose, tolerance_angle);
-    // req.goal_constraints.push_back(pose_goal);  //TODO: change this
+    //   // A tolerance of 0.01 m is specified in position
+    // // and 0.01 radians in orientation
+    // std::vector<double> tolerance_pose(3, 0.01);
+    // std::vector<double> tolerance_angle(3, 0.01);
 
-   //TESTING if FMT* works in the joint space
-   robot_state::RobotState goal_state_fmt(robot_model);
-   std::vector<double> joint_values = {-2.0 , 1.05 , 1.30 , -1.0 , -1.9 , 2.1 , 0.0 };
-   goal_state_fmt.setJointGroupPositions(joint_model_group, joint_values);
-   moveit_msgs::Constraints joint_goal_fmt = kinematic_constraints::constructGoalConstraints(goal_state_fmt, joint_model_group);
-   req.goal_constraints.clear();
-   req.goal_constraints.push_back(joint_goal_fmt);
+    //   // We will create the request as a constraint using a helper function available
+    // // from the
+    // // `kinematic_constraints`_
+    // // package.
+    // //
+    // // .. _kinematic_constraints:
+    // //     http://docs.ros.org/indigo/api/moveit_core/html/namespacekinematic__constraints.html
+    // moveit_msgs::Constraints pose_goal =
+    //     kinematic_constraints::constructGoalConstraints("armLink7square", pose, tolerance_pose, tolerance_angle);
+    // req.goal_constraints.push_back(pose_goal);
+
+
+    //Set the start state of the robot
+    robot_state::RobotState start_state(robot_model);
+    start_state.setToDefaultValues(start_state.getJointModelGroup(PLANNING_GROUP),"home");
+    moveit::core::robotStateToRobotStateMsg(start_state,req.start_state);
+
+   //UNCOMMENT Code if you want to set goal state from joint values instead of from SRDF file
+   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   // robot_state::RobotState goal_state_fmt(robot_model);
+   // std::vector<double> joint_values = {-2.0 , 1.05 , 1.30 , -1.0 , -1.9 , 2.1 , 0.0 };
+   // goal_state_fmt.setJointGroupPositions(joint_model_group, joint_values);
+   
+    robot_state::RobotState goal_state_fmt(robot_model);
+    goal_state_fmt.setToDefaultValues(goal_state_fmt.getJointModelGroup(PLANNING_GROUP),"goal_state");
+
+    moveit_msgs::Constraints joint_goal_fmt = kinematic_constraints::constructGoalConstraints(goal_state_fmt, joint_model_group);
+    req.goal_constraints.clear();
+    req.goal_constraints.push_back(joint_goal_fmt);
 
     // We now construct a planning context that encapsulate the scene,
     // the request and the response. We call the planner using this
@@ -230,7 +292,6 @@ int main(int argc, char** argv) {
       continueToSTOMP = false;
       numSeedFails++;
       ROS_ERROR("Could not compute plan successfully");
-      //return 0;
     }
 
 
@@ -240,39 +301,27 @@ int main(int argc, char** argv) {
     // ^^^^^^^^^^^^^^^^^^^^
 
 
-
-
     /* Visualize the trajectory */
-    ROS_INFO("Visualizing the trajectory");
     moveit_msgs::MotionPlanResponse response;
     res.getMessage(response);
 
 
     tempTime += response.planning_time;
 
-    display_trajectory.trajectory_start = response.trajectory_start;
-    display_trajectory.trajectory.push_back(response.trajectory);
-    display_publisher.publish(display_trajectory);
 
-    //Publish JointTrajectory message
-    std::vector<int>::size_type size1 = response.trajectory.joint_trajectory.points.size();
-
-    for(unsigned iter = 0; iter < size1; iter++) {
-    	response.trajectory.joint_trajectory.points[iter].time_from_start = ros::Duration(0.1*iter);
-  	//ROS_INFO_STREAM(iter);
-    }
-    rqt_publisher.publish(response.trajectory.joint_trajectory); //TODO: Remove this line
+    // UNCOMMENT the following if you wish to display seed trajectory
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    // display_trajectory.trajectory_start = response.trajectory_start;
+    // display_trajectory.trajectory.push_back(response.trajectory);
+    // display_publisher.publish(display_trajectory);
 
 
-    //Displays the norm
-    ROS_INFO_STREAM(determineCost(&(response.trajectory.joint_trajectory)));
+    //Displays the Cost
+    ROS_INFO("Seed Cost :: %f",determineCost(&(response.trajectory.joint_trajectory)));
 
     
-
-    ROS_INFO_STREAM("If we see this, the file is correctly building");
     /* We can also use visual_tools to wait for user input */
    // visual_tools.prompt("Press 'next' in the RvizVisualToolsGui window to continue the demo");
-
 
 
 
@@ -281,7 +330,9 @@ int main(int argc, char** argv) {
     /////////////////////////
 
 
-    if (!node_handle.getParam("chomp_plugin", planner_plugin_name)) 
+    //Load the STOMP planner
+
+    if (!node_handle.getParam("stomp_plugin", planner_plugin_name)) 
       ROS_FATAL_STREAM("Could not find planner plugin name");
     try
     {
@@ -309,39 +360,23 @@ int main(int argc, char** argv) {
                                                            << "Available plugins: " << ss.str());
     }
 
-    //INSERT CODE HERE TO ADD Default Collision Detector
-  //TODO: add back if you want to use CHOMP
+  //UNCOMMENT following code to use the Hybrid COllision Detector
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   //planning_scene->setActiveCollisionDetector(collision_detection::CollisionDetectorAllocatorHybrid::create(), true);
-    //planning_scene->setActiveCollisionDetector(collision_detection::)
+    
+    if(!node_handle.getParam("stomp_allowed_planning_time",req.allowed_planning_time))
+    {
+      ROS_ERROR_STREAM("No default STOMP Planning Time provided. Defaulting to 5s");
+      req.allowed_planning_time = 5;
+    }
+
     // Joint Space Goals
     // ^^^^^^^^^^^^^^^^^
-    /* First, set the state in the planning scene to the final state of the last plan */
-  //  planning_scene->setCurrentState(response.trajectory_start);
-  //  robot_state->setJointGroupPositions(joint_model_group, response.trajectory.joint_trajectory.points.back().positions);
-  //  moveit::core::robotStateToRobotStateMsg(*robot_state,req.start_state);
-
-    //set start state to be 0 again.
-    req.allowed_planning_time = 3;
-
-      // robot_state::RobotState goal_state(robot_model);
-      // goal_state.setJointGroupPositions(joint_model_group, response.trajectory.joint_trajectory.points.back().positions);
-      // moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
-      // req.goal_constraints.clear();
-      // req.goal_constraints.push_back(joint_goal);
-
-
-    robot_state::RobotState start_state(robot_model);
-    std::vector<double> start_joint_vals = {0.0,0.0,0.0,0.0,0.0,0.0,0,0};
-    start_state.setJointGroupPositions(joint_model_group, start_joint_vals);
-    //TODO consider perhaps uncommenting below lines?
-    planning_scene->setCurrentState(start_state); //maybe this
-    robot_state->setJointGroupPositions(joint_model_group, start_joint_vals);  //maybe
+    //Set the start state of the robot again
     moveit::core::robotStateToRobotStateMsg(start_state,req.start_state);
 
-    //Now, setup a joint space goal
+    //Now, setup a joint space goal. Note: the goal state is obtained from the goal used by the seed trajectory
     robot_state::RobotState goal_state(robot_model);
-    // moveit::core::robotStateMsgToRobotState(req.start_state,goal_state);
-    // goal_state.setJointGroupPositions(joint_model_group, response.trajectory.joint_trajectory.points.back().positions);
     goal_state.setJointGroupPositions(joint_model_group, response.trajectory.joint_trajectory.points.back().positions);
     moveit_msgs::Constraints joint_goal = kinematic_constraints::constructGoalConstraints(goal_state, joint_model_group);
     req.goal_constraints.clear();
@@ -349,10 +384,11 @@ int main(int argc, char** argv) {
 
 
 
-    //Now, provide an initial seed trajectory
+    // The following seeds the previously generated trajectory into trajectory_constraints. trajectory_constraints
+    // is not actually used by MoveIt!, so STOMP uses the variable as a way to seed in an initial trajectory. Since
+    // MoveIt! is a geometric planner, it just needs the waypoints (no need for accelerations or velocities). The 
+    // following code converts the BFMT* plan from a JointTrajectory to a Trajectory_Constraintsbrockhamp
 
-    // moveit_msgs::TrajectoryConstraints res;
-    // == req.trajectory_constraints
     trajectory_msgs::JointTrajectory seed = response.trajectory.joint_trajectory;
     const auto dof = seed.joint_names.size();
 
@@ -384,12 +420,10 @@ int main(int argc, char** argv) {
     {
       ROS_ERROR("Could not compute plan successfully");
       stompPassed = false;
-      //return 0;
     }
 
     /* Visualize the trajectory */
 
-    //Following code to separate STOMP from FMT*
     if(stompPassed) 
     {
       // Uncomment following if you want to see successful STOMP seeds. Be sure to change the path
@@ -425,23 +459,14 @@ int main(int argc, char** argv) {
 
       display_trajectory_stomp.trajectory_start = response.trajectory_start;
       display_trajectory_stomp.trajectory.push_back(response.trajectory);
-
       display_publisher_stomp.publish(display_trajectory_stomp);
 
-      //Publish JointTrajectory message
-      std::vector<int>::size_type size2 = response.trajectory.joint_trajectory.points.size();
-
-      for(unsigned iter = 0; iter < size2; iter++) {
-      	response.trajectory.joint_trajectory.points[iter].time_from_start = ros::Duration(0.1*iter);
-    	//ROS_INFO_STREAM(iter);
-      }
-      rqt_publisher.publish(response.trajectory.joint_trajectory);
 
 
-      ROS_INFO_STREAM("STOMP Cost (by Tariq) :: ");
-      ROS_INFO_STREAM(determineCost(&(response.trajectory.joint_trajectory)));
 
-      
+      ROS_INFO("STOMP Cost :: %f",determineCost(&(response.trajectory.joint_trajectory)));
+
+
     } else {
       // UNCOMMENT following code to see which STOMP seeds failed. Be sure to change the path.
       //  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
